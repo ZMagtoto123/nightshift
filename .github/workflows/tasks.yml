@@ -1,25 +1,147 @@
-{
-  "version": 1,
-  "tasks": [
-    {
-      "name": "flow",
-      "type": "script",
-      "description": "Run a flow from flows.json (args: {\"flow\": \"name\"})",
-      "run": ["python", "scripts/flow_runner.py", "--flow", "{flow}"],
-      "timeout": 1800
-    },
-    {
-      "name": "browser",
-      "type": "browser",
-      "description": "Headless Chromium job - pass url + preset (snapshot|text|uptime) or a full spec",
-      "timeout": 600
-    },
-    {
-      "name": "script",
-      "type": "script",
-      "description": "Run a python file from your repo (args: {\"path\": \"scripts/user/my_thing.py\"})",
-      "run": ["python", "{path}"],
-      "timeout": 1800
-    }
-  ]
-}
+# The hands: runs whitelisted tasks from tasks.json - flows, browser jobs,
+# custom scripts. Triggered from the console (repository_dispatch), the
+# Actions UI (workflow_dispatch), or the gh CLI.
+name: tasks
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task name from tasks.json"
+        required: true
+      args:
+        description: "JSON args (e.g. {\"url\":\"https://news.ycombinator.com\"})"
+        default: "{}"
+  repository_dispatch:
+    types: [run-task, browser-job]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tasks
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Resolve task + args from event
+        env:
+          DISPATCH_TASK: ${{ github.event.client_payload.task }}
+          DISPATCH_ARGS: ${{ toJSON(github.event.client_payload.args) }}
+          INPUT_TASK: ${{ github.event.inputs.task }}
+          INPUT_ARGS: ${{ github.event.inputs.args }}
+        run: |
+          python - <<'PY'
+          import json, os
+          dt, da = os.environ.get("DISPATCH_TASK", ""), os.environ.get("DISPATCH_ARGS", "")
+          it, ia = os.environ.get("INPUT_TASK", ""), os.environ.get("INPUT_ARGS", "")
+
+          def parse(raw):
+              try:
+                  v = json.loads(raw) if raw else {}
+                  return v if isinstance(v, dict) else {}
+              except Exception:
+                  return {}
+
+          if dt:
+              task = dt
+              args = parse(da) if da and da != "null" else {}
+          else:
+              task = it
+              args = parse(ia)
+          os.makedirs(".run", exist_ok=True)
+          with open(".run/payload.json", "w") as f:
+              json.dump({"task": task, "args": args}, f)
+          print("payload:", task, args)
+          PY
+
+      - name: Install browser runtime (only for browser tasks)
+        run: |
+          TYPE=$(python - <<'PY'
+          import json
+          reg = {t["name"]: t.get("type", "script") for t in json.load(open("tasks.json"))["tasks"]}
+          payload = json.load(open(".run/payload.json"))
+          print(reg.get(payload["task"], "script"))
+          PY
+          )
+          echo "TASK_TYPE=$TYPE" >> "$GITHUB_ENV"
+          if [ "$TYPE" = "browser" ]; then
+            pip install playwright
+            VER=$(pip show playwright | awk '/^Version/{print $2}')
+            if [ -d ~/.cache/ms-playwright ] && [ -n "$(ls -A ~/.cache/ms-playwright 2>/dev/null)" ]; then
+              echo "browsers restored from cache - installing system libs only"
+              python -m playwright install-deps chromium
+            else
+              python -m playwright install --with-deps chromium
+            fi
+            echo "PW_VER=$VER" >> "$GITHUB_ENV"
+          fi
+
+      - name: Cache Playwright browsers
+        if: env.TASK_TYPE == 'browser'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PW_VER }}
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Run task
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+        run: python scripts/task_runner.py --payload .run/payload.json
+
+      - name: Persist task summaries + journals
+        if: always()
+        run: |
+          git config user.name "bot-tasks"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A state
+          for f in logs/learning_journal.csv logs/daily_trend_state.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          if git diff --cached --quiet; then
+            echo "No summary changes."
+          else
+            git commit -m "task: $(python -c "import json;print(json.load(open('.run/payload.json'))['task'])" 2>/dev/null || echo update) [skip ci]"
+            git pull --rebase origin "$GITHUB_REF_NAME" || true
+            git push
+          fi
+
+      - name: Upload results (screenshots, CSVs, logs)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: results-${{ github.run_id }}
+          path: results/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ]; then
+            curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+              -d chat_id="$TG_CHAT" -d text="🟠 task FAILED — $RUN_URL" > /dev/null || true
+          fi
