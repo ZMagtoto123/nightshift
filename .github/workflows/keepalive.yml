@@ -1,0 +1,47 @@
+# Scheduled workflows get disabled by GitHub after ~60 days with no repo
+# activity. The bot commits state often, but this weekly ping guarantees it
+# even if the market goes quiet.
+name: keepalive
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"   # Mondays 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Re-enable scheduled workflows (belt & braces against the 60-day rule)
+        run: |
+          for wf in bot.yml tasks.yml scheduler.yml keepalive.yml; do
+            gh api -X PUT "/repos/$GITHUB_REPOSITORY/actions/workflows/$wf/enable" >/dev/null 2>&1 \
+              && echo "enabled $wf" || echo "could not enable $wf (probably already on)"
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Touch keepalive marker
+        run: |
+          git config user.name "keepalive"
+          git config user.email "actions@users.noreply.github.com"
+          mkdir -p state
+          printf '{"last_ping": "%s"}\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > state/keepalive.json
+          git add state/keepalive.json
+          if git diff --cached --quiet; then
+            echo "Nothing to commit (identical timestamp - should not happen)."
+          else
+            git commit -m "keepalive: scheduled ping [skip ci]"
+            git push
+          fi
