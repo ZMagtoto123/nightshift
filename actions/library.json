@@ -1,0 +1,329 @@
+{
+  "http_request": {
+    "where": "any",
+    "title": "HTTP request (call any API)",
+    "params": {
+      "url": {
+        "type": "str",
+        "required": true,
+        "hint": "https://api.example.com/v1/thing"
+      },
+      "method": {
+        "type": "str",
+        "default": "GET"
+      },
+      "headers": {
+        "type": "json",
+        "default": "{}"
+      },
+      "body": {
+        "type": "str",
+        "default": ""
+      }
+    },
+    "outputs": [
+      "status",
+      "body"
+    ]
+  },
+  "download_file": {
+    "where": "any",
+    "title": "Download a file to a folder",
+    "params": {
+      "url": {
+        "type": "str",
+        "required": true
+      },
+      "folder": {
+        "type": "str",
+        "default": "downloads"
+      }
+    },
+    "outputs": [
+      "path",
+      "bytes"
+    ]
+  },
+  "email_send": {
+    "where": "any",
+    "title": "Send an email (SMTP)",
+    "params": {
+      "to": {
+        "type": "str",
+        "required": true
+      },
+      "subject": {
+        "type": "str",
+        "required": true
+      },
+      "body": {
+        "type": "str",
+        "required": true
+      }
+    },
+    "outputs": [
+      "sent"
+    ]
+  },
+  "telegram_notify": {
+    "where": "any",
+    "title": "Send a Telegram message",
+    "params": {
+      "text": {
+        "type": "str",
+        "required": true
+      }
+    },
+    "outputs": [
+      "sent"
+    ]
+  },
+  "youtube_upload": {
+    "where": "local",
+    "title": "Upload a video file to YouTube",
+    "params": {
+      "file": {
+        "type": "str",
+        "required": true,
+        "hint": "C:/Users/you/Videos/clip.mp4"
+      },
+      "title": {
+        "type": "str",
+        "required": true
+      },
+      "description": {
+        "type": "str",
+        "default": ""
+      },
+      "privacy": {
+        "type": "str",
+        "default": "private"
+      },
+      "tags": {
+        "type": "str",
+        "default": ""
+      }
+    },
+    "outputs": [
+      "video_id",
+      "url"
+    ]
+  },
+  "organize_folder": {
+    "where": "local",
+    "title": "Organize a folder by file type",
+    "params": {
+      "folder": {
+        "type": "str",
+        "required": true,
+        "hint": "%USERPROFILE%/Downloads"
+      },
+      "dry_run": {
+        "type": "str",
+        "default": "true"
+      }
+    },
+    "outputs": [
+      "count",
+      "moved"
+    ]
+  },
+  "run_command": {
+    "where": "local",
+    "title": "Run a shell command on your PC",
+    "params": {
+      "command": {
+        "type": "str",
+        "required": true,
+        "hint": "git -C C:/proj pull"
+      }
+    },
+    "outputs": [
+      "exit",
+      "stdout",
+      "stderr"
+    ]
+  },
+  "open_url": {
+    "where": "local",
+    "title": "Open a URL / app on your PC",
+    "params": {
+      "url": {
+        "type": "str",
+        "required": true,
+        "hint": "https://... or C:/app.exe"
+      }
+    },
+    "outputs": [
+      "opened"
+    ]
+  },
+  "screenshot_folder": {
+    "where": "local",
+    "title": "List files in a folder on your PC",
+    "params": {
+      "folder": {
+        "type": "str",
+        "required": true
+      }
+    },
+    "outputs": [
+      "count",
+      "files"
+    ]
+  },
+  "read_file": {
+    "where": "local",
+    "title": "Read a file from your PC",
+    "params": {
+      "path": {
+        "type": "str",
+        "required": true,
+        "hint": "C:/Users/you/notes/todo.txt"
+      },
+      "max_chars": {
+        "type": "str",
+        "default": "20000"
+      }
+    },
+    "outputs": [
+      "text",
+      "bytes",
+      "path"
+    ]
+  },
+  "write_file": {
+    "where": "local",
+    "title": "Write / create a file on your PC",
+    "params": {
+      "path": {
+        "type": "str",
+        "required": true,
+        "hint": "C:/Users/you/notes/out.txt"
+      },
+      "content": {
+        "type": "str",
+        "default": ""
+      },
+      "mode": {
+        "type": "str",
+        "default": "overwrite",
+        "hint": "overwrite | append"
+      }
+    },
+    "outputs": [
+      "path",
+      "bytes"
+    ]
+  },
+  "move_file": {
+    "where": "local",
+    "title": "Move / rename a file on your PC",
+    "params": {
+      "src": {
+        "type": "str",
+        "required": true
+      },
+      "dest": {
+        "type": "str",
+        "required": true,
+        "hint": "folder or full new path"
+      }
+    },
+    "outputs": [
+      "src",
+      "dest"
+    ]
+  },
+  "delete_file": {
+    "where": "local",
+    "title": "Delete a file on your PC",
+    "params": {
+      "path": {
+        "type": "str",
+        "required": true
+      }
+    },
+    "outputs": [
+      "deleted",
+      "path"
+    ]
+  },
+  "find_files": {
+    "where": "local",
+    "title": "Find files on your PC (search a folder)",
+    "params": {
+      "folder": {
+        "type": "str",
+        "required": true,
+        "hint": "C:/Users/you/Documents"
+      },
+      "pattern": {
+        "type": "str",
+        "default": "*",
+        "hint": "*.pdf, report*, *.mp4"
+      },
+      "recursive": {
+        "type": "str",
+        "default": "true"
+      }
+    },
+    "outputs": [
+      "count",
+      "files"
+    ]
+  },
+  "browser_control": {
+    "where": "local",
+    "title": "Control a browser on your PC (click, type, screenshot)",
+    "params": {
+      "url": {
+        "type": "str",
+        "required": true,
+        "hint": "https://site.com"
+      },
+      "steps": {
+        "type": "json",
+        "default": "[]",
+        "hint": "[{\"click\":\"#login\"},{\"type\":{\"selector\":\"#user\",\"text\":\"me\"}}]"
+      },
+      "screenshot": {
+        "type": "str",
+        "default": "true"
+      },
+      "show": {
+        "type": "str",
+        "default": "false",
+        "hint": "true = visible window"
+      }
+    },
+    "outputs": [
+      "extracted",
+      "screenshots",
+      "results_dir"
+    ]
+  },
+  "ai_chat": {
+    "where": "any",
+    "title": "Talk to an AI (GPT / Gemini / any OpenAI-compatible API)",
+    "params": {
+      "prompt": {
+        "type": "str",
+        "required": true,
+        "hint": "summarize this: {{step1.body}}"
+      },
+      "system": {
+        "type": "str",
+        "default": "You are a helpful assistant."
+      },
+      "model": {
+        "type": "str",
+        "default": "",
+        "hint": "gpt-4o-mini, gemini-2.0-flash, ..."
+      }
+    },
+    "outputs": [
+      "reply"
+    ]
+  }
+}

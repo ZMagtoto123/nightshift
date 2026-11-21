@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "name": "flow",
+      "type": "script",
+      "description": "Run a flow from flows.json (args: {\"flow\": \"name\"})",
+      "run": ["python", "scripts/flow_runner.py", "--flow", "{flow}"],
+      "timeout": 1800
+    },
+    {
+      "name": "browser",
+      "type": "browser",
+      "description": "Headless Chromium job - pass url + preset (snapshot|text|uptime) or a full spec",
+      "timeout": 600
+    },
+    {
+      "name": "script",
+      "type": "script",
+      "description": "Run a python file from your repo (args: {\"path\": \"scripts/user/my_thing.py\"})",
+      "run": ["python", "{path}"],
+      "timeout": 1800
+    }
+  ]
+}

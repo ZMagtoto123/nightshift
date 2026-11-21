@@ -1,0 +1,32 @@
+{
+  "pipelines": [
+    {
+      "name": "daily-site-snapshot",
+      "cron": "30 13 * * 1-5",
+      "task": "browser",
+      "args": {"url": "https://news.ycombinator.com", "preset": "snapshot"},
+      "enabled": true
+    },
+    {
+      "name": "hourly-uptime-watch",
+      "cron": "0 * * * *",
+      "task": "browser",
+      "args": {"url": "https://github.com", "preset": "uptime"},
+      "enabled": true
+    },
+    {
+      "name": "morning-flow",
+      "cron": "0 8 * * 1-5",
+      "task": "flow",
+      "args": {"flow": "morning-digest"},
+      "enabled": true
+    },
+    {
+      "name": "sort-downloads-nightly",
+      "cron": "0 3 * * *",
+      "task": "flow",
+      "args": {"flow": "sort-downloads"},
+      "enabled": false
+    }
+  ]
+}

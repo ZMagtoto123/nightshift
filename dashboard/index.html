@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIGHTSHIFT · automation for everything</title>
+  <meta name="theme-color" content="#f4f1ea">
+  <meta name="description" content="No-code automation: flows, browser jobs, your PC agent — runs forever on GitHub.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23f4f1ea'/%3E%3Crect x='6' y='6' width='20' height='20' rx='3' fill='none' stroke='%239d5230' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%239d5230'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="login" id="loginGate">
+  <div class="login-card" id="loginCard">
+    <div class="login-mark">NIGHT<span>SHIFT</span></div>
+    <div class="login-sub">Sign in to your workspace</div>
+    <label class="fld"><span>username</span>
+      <input type="text" id="loginUser" autocomplete="username" spellcheck="false">
+    </label>
+    <label class="fld"><span>password</span>
+      <input type="password" id="loginPass" autocomplete="current-password">
+    </label>
+    <button class="btn primary login-btn" id="loginBtn">Sign in</button>
+    <div class="login-err hidden" id="loginErr">Wrong username or password — try again.</div>
+    <div class="login-foot">Runs on GitHub Actions · nothing on this page is stored server-side.</div>
+  </div>
+</div>
+<header class="mast">
+  <div class="wordmark">Night<span>shift</span><em>automation for everything</em></div>
+  <div class="mast-right">
+    <span class="chip" id="repoChip" title="linked repository">not linked</span>
+    <span class="clock" id="utcClock">--:--:-- UTC</span>
+    <button class="btn ghost" id="lockBtn" title="lock the console">lock</button>
+    <button class="btn ghost" id="settingsBtn">settings</button>
+  </div>
+</header>
+
+<div id="firstRun" class="firstrun hidden">
+  <p><strong>Not linked yet.</strong> Open <button class="linklike" id="firstRunSettings">settings</button> and enter your <code>owner/repo</code> plus a GitHub token. First time? Follow the setup card in settings.</p>
+</div>
+
+<nav class="rail">
+  <a href="#live" class="on">live</a>
+  <a href="#runs">runs</a>
+  <a href="#tasks">tasks</a>
+  <a href="#browser">browser</a>
+  <a href="#flows">flows</a>
+  <a href="#agent">agent</a>
+  <a href="#schedules">schedules</a>
+  <a href="#pipeline">pipeline</a>
+</nav>
+
+<main class="grid">
+
+  <section class="panel span5" id="live">
+    <div class="panel-head">
+      <h2>status</h2>
+      <div class="head-meta"><span class="led" id="ledLive" data-state="off"></span><span id="lastTick">waiting for first cloud pass</span></div>
+    </div>
+    <div class="stat-row" id="statRow">
+      <div class="stat"><label>waiting</label><div class="big">—</div></div>
+    </div>
+    <div class="table-wrap">
+      <table class="tbl" id="activityTable"></table>
+    </div>
+    <div class="note">scheduler checks your pipelines every 5 minutes · flows run on schedule, on demand, or on your PC via the agent</div>
+  </section>
+
+  <section class="panel span7" id="runs">
+    <div class="panel-head">
+      <h2>runs</h2>
+      <div class="head-meta"><span id="runsMeta">github actions</span></div>
+    </div>
+    <div id="runsList" class="rows"><div class="empty">loading…</div></div>
+  </section>
+
+  <section class="panel span5" id="tasks">
+    <div class="panel-head">
+      <h2>tasks</h2>
+      <div class="head-meta">one-click runs</div>
+    </div>
+    <div class="btn-grid" id="taskButtons"></div>
+    <h3 class="sub">recent results</h3>
+    <div id="taskResults" class="rows"><div class="empty">loading…</div></div>
+  </section>
+
+  <section class="panel span7" id="browser">
+    <div class="panel-head">
+      <h2>browser jobs</h2>
+      <div class="head-meta">headless chromium · on github's runners</div>
+    </div>
+    <form id="browserForm" class="browser-form">
+      <input type="url" id="jobUrl" placeholder="https://site-you-want-watched.com" required>
+      <div class="chips" id="presetChips">
+        <button type="button" class="chip on" data-preset="snapshot">snapshot</button>
+        <button type="button" class="chip" data-preset="text">read text</button>
+        <button type="button" class="chip" data-preset="uptime">uptime</button>
+      </div>
+      <button class="btn primary" type="submit">launch job</button>
+    </form>
+    <p class="note">snapshots + extracted data come back as artifacts on the run page · custom multi-step jobs: send a full spec to the <code>browser</code> task via the pipeline</p>
+  </section>
+
+  <section class="panel span12" id="flows">
+    <div class="panel-head">
+      <h2>flow builder</h2>
+      <div class="head-meta">
+        <select id="flowSelect" class="sel" aria-label="choose flow"></select>
+        <button class="btn ghost" id="flowNew">new</button>
+        <button class="btn primary" id="flowRun">run now</button>
+        <button class="btn" id="flowSave">commit flow</button>
+      </div>
+    </div>
+    <div class="prow name-row"><label>flow name</label><input type="text" id="flowName" placeholder="my-automation"></div>
+    <div id="flowCanvas"></div>
+    <div class="canvas-actions">
+      <button class="btn primary" id="flowAddStep">＋ add block</button>
+      <span class="note inline-note">blocks run top → bottom · click an output chip to copy <code>{{stepN.field}}</code> · <span class="req">PC</span> blocks execute on your computer via the agent</span>
+    </div>
+    <div class="palette hidden" id="palette">
+      <div class="palette-head"><span>pick a block</span><button class="btn ghost" id="paletteClose">×</button></div>
+      <div class="palette-grid" id="paletteGrid"></div>
+    </div>
+  </section>
+
+  <section class="panel span12" id="agent">
+    <div class="panel-head">
+      <h2>local agent · your pc</h2>
+      <div class="head-meta"><span class="led" id="ledAgent" data-state="off"></span><span id="agentMeta">no jobs yet</span></div>
+    </div>
+    <div id="agentLog" class="rows"><div class="empty">loading…</div></div>
+    <div class="helpcard">
+      <h3>full-computer access · 2-minute install</h3>
+      <ol>
+        <li>Create <code>agent/.env</code> (next to <code>local_agent.py</code>) with <code>AGENT_REPO=you/nightshift</code> and <code>AGENT_TOKEN=</code> a fine-grained PAT (this repo, <strong>Contents: read+write</strong>).</li>
+        <li>Run <code>agent/install_startup.bat</code> once — the agent auto-starts with Windows (hidden console).</li>
+        <li>Test: on the console, run the <em>sort-downloads</em> flow — it touches your real Downloads folder.</li>
+      </ol>
+      YouTube uploads: add <code>YT_CLIENT_ID / YT_CLIENT_SECRET / YT_REFRESH_TOKEN</code> to the same .env (docs, §YouTube). Email: <code>EMAIL_USER / EMAIL_PASS</code> (Gmail app password).
+    </div>
+    <p class="note">pull-based: your PC polls your repo, nothing listens. only people with write access to your repo (you) can queue jobs for it. your token stays on your PC.</p>
+  </section>
+
+  <section class="panel span12" id="schedules">
+    <div class="panel-head">
+      <h2>schedules · pipelines.json</h2>
+      <div class="head-meta">checked every 5 min · cron is UTC</div>
+    </div>
+    <div id="schedList" class="rows"><div class="empty">loading…</div></div>
+    <div class="note">this is your automation pipeline: <strong>name + cron + task + args</strong>. edit <code>pipelines.json</code> in the PIPELINE panel below (or on github) and the scheduler picks it up on the next pass. set <code>"enabled": false</code> to pause one.</div>
+  </section>
+
+  <section class="panel span12" id="pipeline">
+    <div class="panel-head">
+      <h2>pipeline editor</h2>
+      <div class="head-meta">
+        <button class="chip-btn on" id="ptTasks">tasks.json</button>
+        <button class="chip-btn" id="ptPipelines">pipelines.json</button>
+        <button class="btn ghost" id="pipelineReload">reload</button>
+        <button class="btn" id="pipelineSave">commit changes</button>
+      </div>
+    </div>
+    <textarea id="pipelineEditor" spellcheck="false" aria-label="pipeline json editor"></textarea>
+    <div class="note"><strong>tasks.json</strong> = what can run (buttons above). <strong>pipelines.json</strong> = what runs automatically (cron + task + args). edit, hit <em>commit changes</em>, done.</div>
+  </section>
+
+  <footer class="span12 foot">
+    <span>nightshift · scheduler every 5 min · keepalive weekly</span>
+    <span id="demoBadge" class="badge-demo hidden">SAMPLE DATA · ?demo=1</span>
+  </footer>
+</main>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <h2>settings</h2>
+    <button class="btn ghost" id="drawerClose">close</button>
+  </div>
+
+  <label class="fld"><span>repository (owner/repo)</span>
+    <input type="text" id="repoInput" placeholder="your-name/nightshift">
+  </label>
+  <label class="fld"><span>github token — stays in this browser only</span>
+    <input type="password" id="tokenInput" placeholder="github_pat_… or ghp_…" autocomplete="off">
+  </label>
+  <div class="btn-row">
+    <button class="btn primary" id="saveSettings">save &amp; link</button>
+    <button class="btn ghost" id="clearToken">forget token</button>
+  </div>
+  <p class="note" id="linkStatus"></p>
+
+  <div class="helpcard">
+    <h3>first time here · 5-minute setup</h3>
+    <ol>
+      <li>On github.com create a <strong>public</strong> repo and upload the contents of the <code>github-upload</code> folder (Add file → Upload files, drag everything in).</li>
+      <li>Repo → <em>Settings → Secrets and variables → Actions</em> → optional: <code>TELEGRAM_BOT_TOKEN</code> + <code>TELEGRAM_CHAT_ID</code> (alerts) and <code>EMAIL_USER</code> + <code>EMAIL_PASS</code> (email blocks). Nothing required to start.</li>
+      <li>Repo → <em>Actions</em> → run <strong>scheduler</strong> once manually → then <em>Settings → Pages</em> → Source: <strong>GitHub Actions</strong>.</li>
+      <li>Create a fine-grained token at <em>github.com/settings/personal-access-tokens/new</em> — only this repo, permission <strong>Actions: read+write</strong> and <strong>Contents: read+write</strong>.</li>
+      <li>Paste <code>owner/repo</code> + token above. Done — the scheduler now ticks every 30 min, forever.</li>
+    </ol>
+  </div>
+
+  <p class="note">token is stored in this browser's localStorage and sent only to api.github.com. use a fine-grained token scoped to this one repo; revoke it any time on github.</p>
+  <p class="note">just looking? <a href="?demo=1">open demo mode</a></p>
+</aside>
+
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

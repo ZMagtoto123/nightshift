@@ -1,0 +1,24 @@
+{
+  "flows": [
+    {
+      "name": "morning-digest",
+      "steps": [
+        {"action": "http_request", "params": {"url": "https://hacker-news.firebaseio.com/v0/topstories.json"}},
+        {"action": "telegram_notify", "params": {"text": "Top HN story IDs today: {{step1.body}}"}}
+      ]
+    },
+    {
+      "name": "sort-downloads",
+      "steps": [
+        {"action": "organize_folder", "params": {"folder": "%USERPROFILE%/Downloads", "dry_run": "true"}}
+      ]
+    },
+    {
+      "name": "publish-video",
+      "steps": [
+        {"action": "youtube_upload", "params": {"file": "{{flow.file}}", "title": "{{flow.title}}", "privacy": "private"}},
+        {"action": "telegram_notify", "params": {"text": "Uploaded! {{step1.url}}"}}
+      ]
+    }
+  ]
+}
